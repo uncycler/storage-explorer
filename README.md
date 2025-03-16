@@ -11,6 +11,7 @@ Furthermore it is possible to filter for a certain Storage Container Names or/an
 
 * `--accountName` or `-n`: (mandatory) provide the name of the Storage Account
 * `--accessKey` or `-k`: (mandatory) provide the Access Key of Storage Account
+* `--connectionString` or `-x`: (optional) provide the connection string of Storage Account (instead of working with accountName and accessKey)
 * `--container` or `-c`: (optional) filter for a specific container by it names. Substring match
 * `--blob` or `-b`: (optional) filter for specific blobs by it names. Substring match
 * `--metadata-filter` or `-m`: (optional) filter for metadata <key:value>. Shows only the blobs matching at least one given filter.

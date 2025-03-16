@@ -24,13 +24,14 @@ type storageAccount struct {
 }
 
 type arguments struct {
-	AccountName    string
-	AccessKey      string
-	MSI            string
-	ContainerName  string
-	BlobName       string
-	ShowContent    bool
-	MetadataFilter []string
+	AccountName      string
+	AccessKey        string
+	ConnectionString string
+	MSI              string
+	ContainerName    string
+	BlobName         string
+	ShowContent      bool
+	MetadataFilter   []string
 }
 
 var largs = arguments{}
@@ -55,12 +56,15 @@ var foundContainer []myContainer
 func init() {
 	rootCmd.Flags().StringVarP(&largs.AccountName, "accountName", "n", "", "accountName of the Storage Account")
 	rootCmd.Flags().StringVarP(&largs.AccessKey, "accessKey", "k", "", "accessKey for the Storage Account")
+	rootCmd.Flags().StringVarP(&largs.ConnectionString, "connectionstring", "x", "", "connectionString for the Storage Account")
 	rootCmd.Flags().StringVarP(&largs.MSI, "msi", "i", "", "user assigned managed Identity to Access the Storage Account")
 	rootCmd.Flags().StringVarP(&largs.ContainerName, "container", "c", "", "filter for container name with substring match")
 	rootCmd.Flags().StringVarP(&largs.BlobName, "blob", "b", "", "filter for blob name with substring match")
 	rootCmd.Flags().BoolVar(&largs.ShowContent, "show-content", false, "downloads and prints content of blobs in addition to other logs")
 	rootCmd.Flags().StringSliceVarP(&largs.MetadataFilter, "metadata-filter", "m", []string{}, "OR filter for blob metadata. Structure is <key>:<value>")
-	rootCmd.MarkFlagRequired("accountName")
+	if largs.ConnectionString != "" {
+		rootCmd.MarkFlagRequired("accountName")
+	}
 	rootCmd.SetVersionTemplate(getVersion())
 }
 
@@ -74,31 +78,38 @@ func exec(args arguments) {
 	URL, _ := url.Parse(fmt.Sprintf(storageURLTemplate, args.AccountName))
 
 	// if AccessKey is provided use them
-	if len(args.AccessKey) > 0 {
-		keyCredentials, authErr := azblob.NewSharedKeyCredential(args.AccountName, args.AccessKey)
-		if authErr != nil {
-			log.Fatal("Error while Authentication with AccessKey", authErr)
+	if len(args.ConnectionString) > 0 {
+		client, clientError = azblob.NewClientFromConnectionString(args.ConnectionString, nil)
+		if clientError != nil {
+			log.Fatal("Error while Authentication with ConnectionString", clientError)
 		}
-		client, clientError = azblob.NewClientWithSharedKeyCredential(URL.String(), keyCredentials, nil)
 	} else {
-		var authErr error
-		var credentials *azidentity.ManagedIdentityCredential
-
-		// if user assigned managed identity is provided use them
-		if len(args.MSI) > 0 {
-			options := azidentity.ManagedIdentityCredentialOptions{}
-			options.ID = azidentity.ClientID(args.MSI)
-			credentials, authErr = azidentity.NewManagedIdentityCredential(&options)
+		if len(args.AccessKey) > 0 {
+			keyCredentials, authErr := azblob.NewSharedKeyCredential(args.AccountName, args.AccessKey)
+			if authErr != nil {
+				log.Fatal("Error while Authentication with AccessKey", authErr)
+			}
+			client, clientError = azblob.NewClientWithSharedKeyCredential(URL.String(), keyCredentials, nil)
 		} else {
-			// for system assigned managed identity we don't need to pass anything
-			credentials, authErr = azidentity.NewManagedIdentityCredential(nil)
-		}
+			var authErr error
+			var credentials *azidentity.ManagedIdentityCredential
 
-		if authErr != nil {
-			log.Fatal("Error while Authentication with DefaultCredentials", authErr)
-		}
+			// if user assigned managed identity is provided use them
+			if len(args.MSI) > 0 {
+				options := azidentity.ManagedIdentityCredentialOptions{}
+				options.ID = azidentity.ClientID(args.MSI)
+				credentials, authErr = azidentity.NewManagedIdentityCredential(&options)
+			} else {
+				// for system assigned managed identity we don't need to pass anything
+				credentials, authErr = azidentity.NewManagedIdentityCredential(nil)
+			}
 
-		client, clientError = azblob.NewClient(URL.String(), credentials, nil)
+			if authErr != nil {
+				log.Fatal("Error while Authentication with DefaultCredentials", authErr)
+			}
+
+			client, clientError = azblob.NewClient(URL.String(), credentials, nil)
+		}
 	}
 
 	if clientError != nil {

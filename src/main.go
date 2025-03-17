@@ -56,7 +56,7 @@ var foundContainer []myContainer
 func init() {
 	rootCmd.Flags().StringVarP(&largs.AccountName, "accountName", "n", "", "accountName of the Storage Account")
 	rootCmd.Flags().StringVarP(&largs.AccessKey, "accessKey", "k", "", "accessKey for the Storage Account")
-	rootCmd.Flags().StringVarP(&largs.ConnectionString, "connectionstring", "x", "", "connectionString for the Storage Account")
+	rootCmd.Flags().StringVarP(&largs.ConnectionString, "connectionString", "x", "", "connectionString for the Storage Account")
 	rootCmd.Flags().StringVarP(&largs.MSI, "msi", "i", "", "user assigned managed Identity to Access the Storage Account")
 	rootCmd.Flags().StringVarP(&largs.ContainerName, "container", "c", "", "filter for container name with substring match")
 	rootCmd.Flags().StringVarP(&largs.BlobName, "blob", "b", "", "filter for blob name with substring match")
